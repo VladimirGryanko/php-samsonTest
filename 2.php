@@ -52,3 +52,47 @@ $array1 = array(
 // }catch (Exception $e) {
 //   echo "Ошибка: ".$e->getMessage();
 // }
+$xml = simplexml_load_file('data_samson.xml');
+function importXml($a)
+{
+  $link = mysqli_connect('localhost', 'root', 'root', 'test_samson');
+  if (mysqli_connect_errno()) {
+    echo mysqli_connect_errno();
+  }
+  $code = 1;
+  foreach ($a->Товар as $product) {
+    $sql = "INSERT INTO `a_product` (`id`, `code`, `name`) 
+    VALUES (NULL, '" . 1 * $product["Код"] . "','" . $product["Название"] . "')";
+    $result = mysqli_query($link, $sql);
+    $res = mysqli_query($link, "SELECT id FROM a_product WHERE `code`= " . 1 * $product["Код"] . "");
+    $id = mysqli_fetch_assoc($res);
+    $id = $id['id'];
+    foreach ($product->Разделы as $categoryes) {
+      foreach ($categoryes as $category) {
+        $sql = "INSERT INTO `a_category`(`id`, `code`, `name`) VALUES (NULL," . $code . ",'" . $category . "')";
+        if (mysqli_query($link, $sql)) {
+          $code++;
+        }
+        $res = mysqli_query($link, "SELECT id FROM a_category WHERE `name` = '" . $category . "'");
+        $id_category = mysqli_fetch_assoc($res);
+        $id_category = $id_category['id'];
+        $sql = "INSERT INTO `category_product` (`id_product`,`id_category`) VALUES (" . $id . "," . $id_category . ")";
+        $result = mysqli_query($link, $sql);
+      }
+    }
+    foreach ($product->Цена as $price) {
+      $sql = "INSERT INTO `a_price` (`id_product`, `price_type`, `price`) 
+      VALUES ('" . $id . "', '" . $price["Тип"] . "','" . $price . "')";
+      $result = mysqli_query($link, $sql);
+    }
+    foreach ($product->Свойства as $property) {
+      foreach ($property as $nameProperty) {
+        $nm = $nameProperty->getName();
+        $sql = "INSERT INTO `a_property` (`product`, `property_value`) VALUES ('" . $id . "', '" . $nm . " " . $nameProperty . " " . $nameProperty['ЕдИзм']  . "')";
+        $result = mysqli_query($link, $sql);
+      }
+    }
+  }
+  mysqli_close($link);
+}
+importXml($xml);
