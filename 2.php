@@ -96,3 +96,77 @@ function importXml($a)
   mysqli_close($link);
 }
 importXml($xml);
+function exportXml($a, $b)
+{
+  $link = mysqli_connect('localhost', 'root', 'root', 'test_samson');
+  if (mysqli_connect_errno()) {
+    echo mysqli_connect_errno();
+  }
+  $result = mysqli_query($link, "SELECT id FROM a_category WHERE `code` =" . $b . "");
+  $id_category = mysqli_fetch_assoc($result);
+  $id_category = $id_category['id'];
+  $sql = "SELECT id_product FROM category_product WHERE id_category = " . $id_category . " ";
+  $result = mysqli_query($link, $sql);
+  while (($row = $result->fetch_array()) != false) {
+    $id_product[] = $row;
+  }
+  foreach ($id_product as $product) {
+    $sql = "SELECT code FROM a_product WHERE id = " . $product[0] . "";
+    $result = mysqli_query($link, $sql);
+    $code = mysqli_fetch_assoc($result);
+    $code = $code['code'];
+    $sql = "SELECT `name` FROM a_product WHERE id = " . $product[0] . "";
+    $result = mysqli_query($link, $sql);
+    $name = mysqli_fetch_assoc($result);
+    $name = $name['name'];
+    $tovar = $a->addChild('Товар',);
+    $tovar->addAttribute('Код', $code);
+    $tovar->addAttribute('Название', $name);
+    $sql = "SELECT price FROM a_price WHERE id_product = " . $product[0] . "";
+    $result = mysqli_query($link, $sql);
+    $price = array();
+    while (($row = $result->fetch_array()) != false) {
+      $price[] = $row;
+    }
+    foreach ($price as $price) {
+      $sql = "SELECT price_type FROM a_price WHERE price = " . $price[0] . "";
+      $result = mysqli_query($link, $sql);
+      $price_type = mysqli_fetch_assoc($result);
+      $price_type = $price_type['price_type'];
+      $priceproduct = $tovar->addChild('Цена', $price[0]);
+      $priceproduct->addAttribute('Тип', $price_type);
+    }
+    $property_product = $tovar->addChild('Свойства');
+    $sql = "SELECT property_value FROM a_property WHERE product = " . $product[0] . "";
+    $result = mysqli_query($link, $sql);
+    $property = array();
+    while (($row = $result->fetch_array()) != false) {
+      $property[] = $row;
+    }
+    foreach ($property as $property) {
+      $property_value = array();
+      $property_value = explode(" ", $property[0]);
+      $parametr = $property_product->addChild($property_value[0], $property_value[1]);
+      if ($property_value[2] != "") {
+        $parametr->addAttribute('ЕдИзм', $property_value[2]);
+      }
+    }
+    $category = $tovar->addChild('Разделы');
+    $sql = "SELECT id_category FROM category_product WHERE id_product = " . $product['id_product'] . "";
+    $result = mysqli_query($link, $sql);
+    $categoryes = array();
+    while (($row = $result->fetch_array()) != false) {
+      $categoryes[] = $row;
+    }
+    foreach ($categoryes as $value) {
+      $sql = "SELECT `name`FROM a_category WHERE id = " . $value[0] . " ";
+      $result = mysqli_query($link, $sql);
+      $nameCat = mysqli_fetch_assoc($result);
+      $nameCat = $nameCat['name'];
+      $category->addChild('Раздел', $nameCat);
+    }
+  }
+  echo ($a->asXML('data_samson.xml'));
+  mysqli_close($link);
+}
+exportXml($xml, 2);
